@@ -1,33 +1,35 @@
-# BeaverBank
+# 🦫 BeaverBank
 
 <p align="center">
   <img src="img/beaverbank_logo.png" alt="BeaverBank logo" width="260" />
 </p>
 
-**BeaverBank** é uma implementação autoral de um Neobank descentralizado construído em Anchor para o **Desafio 1 (Opção B)** do Bootcamp Hackathon Global 2026. O projeto oferece uma solução robusta e segura para gerenciamento de contas bancárias on-chain, com suporte completo para transações de SOL e tokens SPL.
+**BeaverBank** é uma implementação autoral de um **Neobank descentralizado** construído em Anchor para o **Desafio 1 (Opção B)** do Bootcamp Hackathon Global 2026. O projeto oferece uma solução **robusta e segura** para gerenciamento de contas bancárias on-chain, com suporte completo para transações de SOL e tokens SPL.
 
 ---
 
-## Identificadores do Programa
+## 🔑 Identificadores do Programa
 
-**Devnet:** `7Hrcju6Xgz6DPoyZSZLgeVjqbmxkcGSi2ZaXsL4KDN7C`
-
----
-
-## Funcionalidades Principais
-
-**Conta PDA Personalizada** — Cada usuário possui uma conta bancária descentralizada gerenciada por uma Programa Derived Address (PDA)  
-**Transações de SOL** — Depósito e saque de SOL com rastreamento seguro de saldo  
-**Suporte a SPL Tokens** — Depósito e saque de tokens SPL via Cross-Program Invocations (CPI)  
-**Vault Dedicado** — Cofre SPL centralizado em uma Associated Token Account com autoridade transferida para a PDA  
-**Encerramento Seguro** — Contas só podem ser fechadas quando todos os saldos estão zerados  
-**Cobertura de Testes** — Suite automatizada validando fluxos positivos e casos de segurança críticos  
+```
+🌐 Devnet: 7Hrcju6Xgz6DPoyZSZLgeVjqbmxkcGSi2ZaXsL4KDN7C
+```
 
 ---
 
-## Arquitetura do Sistema
+## ⚡ Funcionalidades Principais
 
-### Componente: Conta Bancária (`bank_account`)
+🏦 **Conta PDA Personalizada** — Cada usuário possui uma conta bancária descentralizada gerenciada por uma Programa Derived Address (PDA)  
+💰 **Transações de SOL** — Depósito e saque de SOL com rastreamento seguro de saldo  
+🪙 **Suporte a SPL Tokens** — Depósito e saque de tokens SPL via Cross-Program Invocations (CPI)  
+🔐 **Vault Dedicado** — Cofre SPL centralizado em uma Associated Token Account com autoridade transferida para a PDA  
+🛡️ **Encerramento Seguro** — Contas só podem ser fechadas quando todos os saldos estão zerados  
+✅ **Cobertura de Testes** — Suite automatizada validando fluxos positivos e casos de segurança críticos  
+
+---
+
+## 🏗️ Arquitetura do Sistema
+
+### 📊 Componente: Conta Bancária (`bank_account`)
 
 A conta principal é uma PDA derivada de `['bank', owner_pubkey]`, mantendo o seguinte estado:
 
@@ -40,7 +42,7 @@ A conta principal é uma PDA derivada de `['bank', owner_pubkey]`, mantendo o se
 | `token_balance` | `u64` | Saldo de SPL rastreado em unidades brutes |
 | `token_vault_initialized` | `bool` | Flag indicando se o cofre foi inicializado |
 
-### Componente: Cofre de Token (`token_vault`)
+### 🏺 Componente: Cofre de Token (`token_vault`)
 
 O cofre de SPL é uma Associated Token Account (ATA) criada sob autoridade da PDA, servindo como custódia segura dos tokens do usuário:
 
@@ -50,9 +52,9 @@ O cofre de SPL é uma Associated Token Account (ATA) criada sob autoridade da PD
 
 ---
 
-## Modelo de Segurança
+## 🔒 Modelo de Segurança
 
-### Superfície de Ataque Identificada
+### 🎯 Superfície de Ataque Identificada
 
 1. Acesso não autorizado a contas de terceiros
 2. Redirecionamento de tokens para mints diferentes
@@ -60,7 +62,7 @@ O cofre de SPL é uma Associated Token Account (ATA) criada sob autoridade da PD
 4. Encerramento de contas com ativos residuais
 5. Ataques de overflow em operações aritméticas
 
-### Controles de Segurança Implementados
+### 🛡️ Controles de Segurança Implementados
 
 | Controle | Descrição | Localização |
 | --- | --- | --- |
@@ -72,74 +74,72 @@ O cofre de SPL é uma Associated Token Account (ATA) criada sob autoridade da PD
 | **Encerramento Seguro** | Conta fechable apenas com saldos zerados | Constraint `close = owner` com validação de saldo zero |
 | **Proteção de Overflow** | Operações aritméticas com `checked_add/sub` | Uso de métodos safe em todos os cálculos |
 
-### Invariantes de Segurança Mantidas
+### ✨ Invariantes de Segurança Mantidas
 
-- Somente o proprietário pode movimentar fundos de sua conta
-- O saldo rastreado nunca pode ser negativo
-- O vault SPL corresponde consistentemente ao mint configurado
-- Uma conta só pode ser encerrada quando todos os ativos foram removidos
-
----
-
-## Instruções On-Chain
-
-O programa oferece sete instruções principais:
-
-1. **`initialize_bank_account`** — Cria uma nova conta bancária PDA para o usuário
-2. **`deposit_sol`** — Transfere SOL do usuário para a conta com atualização de saldo
-3. **`withdraw_sol`** — Retira SOL da conta para o proprietário (com validação de saldo)
-4. **`configure_token_vault`** — Inicializa o vault SPL e fixa o mint da conta
-5. **`deposit_spl`** — Transfere SPL para o vault via CPI `transfer_checked`
-6. **`withdraw_spl`** — Retira SPL do vault via CPI com autoridade da PDA
-7. **`close_bank_account`** — Encerra a conta e resgata o SOL de rent (exige saldos zerados)
+✔️ Somente o proprietário pode movimentar fundos de sua conta  
+✔️ O saldo rastreado nunca pode ser negativo  
+✔️ O vault SPL corresponde consistentemente ao mint configurado  
+✔️ Uma conta só pode ser encerrada quando todos os ativos foram removidos
 
 ---
 
-## Suite de Testes
+## 🔧 Instruções On-Chain
+
+O programa oferece **sete instruções principais**:
+
+1️⃣ **`initialize_bank_account`** — Cria uma nova conta bancária PDA para o usuário  
+2️⃣ **`deposit_sol`** — Transfere SOL do usuário para a conta com atualização de saldo  
+3️⃣ **`withdraw_sol`** — Retira SOL da conta para o proprietário (com validação de saldo)  
+4️⃣ **`configure_token_vault`** — Inicializa o vault SPL e fixa o mint da conta  
+5️⃣ **`deposit_spl`** — Transfere SPL para o vault via CPI `transfer_checked`  
+6️⃣ **`withdraw_spl`** — Retira SPL do vault via CPI com autoridade da PDA  
+7️⃣ **`close_bank_account`** — Encerra a conta e resgata o SOL de rent (exige saldos zerados)
+
+---
+
+## 🧪 Suite de Testes
 
 A suite de testes em TypeScript (`anchor test`) valida:
 
-✓ Fluxo completo de SOL (inicialização, depósito e saque)  
-✓ Fluxo completo de SPL (configuração, depósito e saque)  
-✓ Bloqueio de reconfigurações de mint (imutabilidade)  
-✓ Bloqueio de acesso por não-proprietários (segurança)  
-✓ Bloqueio de encerramento de contas com saldo residual  
+✅ Fluxo completo de SOL (inicialização, depósito e saque)  
+✅ Fluxo completo de SPL (configuração, depósito e saque)  
+✅ Bloqueio de reconfigurações de mint (imutabilidade)  
+✅ Bloqueio de acesso por não-proprietários (segurança)  
+✅ Bloqueio de encerramento de contas com saldo residual  
 
-**Resultado:** 5 testes passando com cobertura completa de casos críticos.
+**🎯 Resultado:** 5 testes passando com cobertura completa de casos críticos.
 
 ---
 
-## Documentação Detalhada
+## 📚 Documentação Detalhada
 
 Para informações aprofundadas sobre qualquer aspecto do projeto, consulte:
 
-| Documento | Focado Em | Conteúdo |
+| 📄 Documento | 🎯 Focado Em | 📖 Conteúdo |
 | --- | --- | --- |
 | **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arquitetura e Design | Modelo de PDA em detalhe, layout de estado, fluxos de operações, interações de CPI, diagramas de autorização, escalabilidade |
 | **[SECURITY.md](docs/SECURITY.md)** | Segurança e Validações | Análise de 7 ameaças with mitigations, invariantes de segurança, testes de validação, checklist para produção, boas práticas |
 | **[API.md](docs/API.md)** | Referência Técnica | Cada instrução detalhada (parâmetros, contas, validações), exemplos de TypeScript, fluxos completos, referência de erros |
 | **[USAGE.md](docs/USAGE.md)** | Operacional e Deployment | Setup inicial, build e testes, deploy em localnet e devnet, CLI de demonstração, troubleshooting, performance |
 | **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Contribução e Manutenção | Estrutura do projeto, workflow de desenvolvimento, boas práticas de código, testing, debugging, contribuição |
-| **[docs/INDEX.md](docs/INDEX.md)** | Navegação | Índice centralizado, mapa conceitual, guias por perfil (usuário, dev, auditor) |
-
 ---
 
-## Execução Rápida
+## 🚀 Execução Rápida
 
-### Instalação e Build
+### 📦 Instalação e Build
 
 ```bash
 npm install
 npm run build
 ```
 
-### Rodar Testes
+### 🧪 Rodar Testes
 
 ```bash
 npm test
 ```
 
-### Usar a CLI de Demonstração
+### 💻 Usar a CLI de Demonstração
 
 ```bash
 npm run beaverbank -- help
@@ -147,16 +147,22 @@ npm run beaverbank -- help
 
 ---
 
-## Checklist de Conformidade ao Desafio
+## ✅ Checklist de Conformidade ao Desafio
 
-- [x] Programa funcional em Anchor com instruções principais
-- [x] Uso correto de Programa Derived Addresses (PDA) com seeds e bump
-- [x] Movimentação de SOL e SPL tokens
-- [x] Controle de acesso baseado em proprietário
-- [x] Testes automatizados com cobertura de segurança
-- [x] Documentação clara e bem estruturada
+- ✨ Programa funcional em Anchor com instruções principais
+- ✨ Uso correto de Programa Derived Addresses (PDA) com seeds e bump
+- ✨ Movimentação de SOL e SPL tokens
+- ✨ Controle de acesso baseado em proprietário
+- ✨ Testes automatizados com cobertura de segurança
+- ✨ Documentação clara e bem estruturada
 
 ---
 
-**BeaverBank** — Segurança descentralizada ao seu alcance.
+<div align="center">
+
+### 🦫 **BeaverBank** — Segurança descentralizada ao seu alcance.
+
+*Built with ❤️ for the Global Hackathon Bootcamp 2026*
+
+</div>
 
