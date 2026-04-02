@@ -109,6 +109,21 @@ A suite de testes em TypeScript (`anchor test`) valida:
 
 ---
 
+## Documentação Detalhada
+
+Para informações aprofundadas sobre qualquer aspecto do projeto, consulte:
+
+| Documento | Focado Em | Conteúdo |
+| --- | --- | --- |
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arquitetura e Design | Modelo de PDA em detalhe, layout de estado, fluxos de operações, interações de CPI, diagramas de autorização, escalabilidade |
+| **[SECURITY.md](docs/SECURITY.md)** | Segurança e Validações | Análise de 7 ameaças with mitigations, invariantes de segurança, testes de validação, checklist para produção, boas práticas |
+| **[API.md](docs/API.md)** | Referência Técnica | Cada instrução detalhada (parâmetros, contas, validações), exemplos de TypeScript, fluxos completos, referência de erros |
+| **[USAGE.md](docs/USAGE.md)** | Operacional e Deployment | Setup inicial, build e testes, deploy em localnet e devnet, CLI de demonstração, troubleshooting, performance |
+| **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Contribução e Manutenção | Estrutura do projeto, workflow de desenvolvimento, boas práticas de código, testing, debugging, contribuição |
+| **[docs/INDEX.md](docs/INDEX.md)** | Navegação | Índice centralizado, mapa conceitual, guias por perfil (usuário, dev, auditor) |
+
+---
+
 ## Execução Rápida
 
 ### Instalação e Build
