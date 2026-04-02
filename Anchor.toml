@@ -7,7 +7,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-neobank = "8jR5GeNzeweq35Uo84kGP3v1NcBaZWH5u62k7PxN4T2y"
+neobank = "7Hrcju6Xgz6DPoyZSZLgeVjqbmxkcGSi2ZaXsL4KDN7C"
+
+[programs.devnet]
+neobank = "7Hrcju6Xgz6DPoyZSZLgeVjqbmxkcGSi2ZaXsL4KDN7C"
 
 [registry]
 url = "https://api.apr.dev"

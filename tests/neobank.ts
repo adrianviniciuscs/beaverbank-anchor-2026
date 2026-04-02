@@ -8,7 +8,7 @@ import {
     createAssociatedTokenAccount,
     getAccount,
 } from "@solana/spl-token";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import assert from "node:assert";
 
 describe("neobank", () => {
@@ -137,5 +137,208 @@ describe("neobank", () => {
 
         const bankAccount = await (program.account as any).bankAccount.fetch(bankPda);
         assert.equal(bankAccount.tokenBalance.toString(), "2000000");
+    });
+
+    it("rejects reconfiguration with a different mint", async () => {
+        const isolatedOwner = Keypair.generate();
+        const airdropSig = await provider.connection.requestAirdrop(isolatedOwner.publicKey, LAMPORTS_PER_SOL);
+        await provider.connection.confirmTransaction(airdropSig, "confirmed");
+
+        const [isolatedBankPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("bank"), isolatedOwner.publicKey.toBuffer()],
+            program.programId,
+        );
+
+        await program.methods
+            .initializeBankAccount()
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: isolatedBankPda,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        const mintA = await createMint(
+            provider.connection,
+            owner,
+            owner.publicKey,
+            null,
+            6,
+            undefined,
+            undefined,
+            TOKEN_PROGRAM_ID,
+        );
+
+        const mintB = await createMint(
+            provider.connection,
+            owner,
+            owner.publicKey,
+            null,
+            6,
+            undefined,
+            undefined,
+            TOKEN_PROGRAM_ID,
+        );
+
+        const tokenVaultA = getAssociatedTokenAddressSync(mintA, isolatedBankPda, true, TOKEN_PROGRAM_ID);
+        const tokenVaultB = getAssociatedTokenAddressSync(mintB, isolatedBankPda, true, TOKEN_PROGRAM_ID);
+
+        await program.methods
+            .configureTokenVault()
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: isolatedBankPda,
+                tokenMint: mintA,
+                tokenVault: tokenVaultA,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                associatedTokenProgram: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        let rejected = false;
+        try {
+            await program.methods
+                .configureTokenVault()
+                .accounts({
+                    owner: isolatedOwner.publicKey,
+                    bankAccount: isolatedBankPda,
+                    tokenMint: mintB,
+                    tokenVault: tokenVaultB,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .signers([isolatedOwner])
+                .rpc();
+        } catch (_error) {
+            rejected = true;
+        }
+
+        assert.equal(rejected, true, "changing mint after initial configuration must fail");
+    });
+
+    it("closes bank account only when balances are zero", async () => {
+        const isolatedOwner = Keypair.generate();
+        const airdropSig = await provider.connection.requestAirdrop(isolatedOwner.publicKey, LAMPORTS_PER_SOL);
+        await provider.connection.confirmTransaction(airdropSig, "confirmed");
+
+        const [closePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("bank"), isolatedOwner.publicKey.toBuffer()],
+            program.programId,
+        );
+
+        await program.methods
+            .initializeBankAccount()
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: closePda,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        await program.methods
+            .depositSol(new anchor.BN(10_000_000))
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: closePda,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        let closeRejected = false;
+        try {
+            await program.methods
+                .closeBankAccount()
+                .accounts({
+                    owner: isolatedOwner.publicKey,
+                    bankAccount: closePda,
+                })
+                .signers([isolatedOwner])
+                .rpc();
+        } catch (_error) {
+            closeRejected = true;
+        }
+
+        assert.equal(closeRejected, true, "closing must fail while there is SOL in the bank account");
+
+        await program.methods
+            .withdrawSol(new anchor.BN(10_000_000))
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: closePda,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        await program.methods
+            .closeBankAccount()
+            .accounts({
+                owner: isolatedOwner.publicKey,
+                bankAccount: closePda,
+            })
+            .signers([isolatedOwner])
+            .rpc();
+
+        const closed = await provider.connection.getAccountInfo(closePda);
+        assert.equal(closed, null, "bank account should be closed and deallocated");
+    });
+
+    it("rejects non-owner access", async () => {
+        const ownerA = Keypair.generate();
+        const attacker = Keypair.generate();
+
+        const airdropOwner = await provider.connection.requestAirdrop(ownerA.publicKey, LAMPORTS_PER_SOL);
+        await provider.connection.confirmTransaction(airdropOwner, "confirmed");
+
+        const airdropAttacker = await provider.connection.requestAirdrop(attacker.publicKey, LAMPORTS_PER_SOL);
+        await provider.connection.confirmTransaction(airdropAttacker, "confirmed");
+
+        const [bankPdaA] = PublicKey.findProgramAddressSync(
+            [Buffer.from("bank"), ownerA.publicKey.toBuffer()],
+            program.programId,
+        );
+
+        await program.methods
+            .initializeBankAccount()
+            .accounts({
+                owner: ownerA.publicKey,
+                bankAccount: bankPdaA,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([ownerA])
+            .rpc();
+
+        await program.methods
+            .depositSol(new anchor.BN(10_000_000))
+            .accounts({
+                owner: ownerA.publicKey,
+                bankAccount: bankPdaA,
+                systemProgram: SystemProgram.programId,
+            })
+            .signers([ownerA])
+            .rpc();
+
+        let rejected = false;
+        try {
+            await program.methods
+                .withdrawSol(new anchor.BN(1_000_000))
+                .accounts({
+                    owner: attacker.publicKey,
+                    bankAccount: bankPdaA,
+                    systemProgram: SystemProgram.programId,
+                })
+                .signers([attacker])
+                .rpc();
+        } catch (_error) {
+            rejected = true;
+        }
+
+        assert.equal(rejected, true, "non-owner must not be able to operate another bank account");
     });
 });

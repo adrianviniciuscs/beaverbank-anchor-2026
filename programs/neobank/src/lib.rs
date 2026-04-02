@@ -7,7 +7,7 @@ use anchor_spl::{
     },
 };
 
-declare_id!("8jR5GeNzeweq35Uo84kGP3v1NcBaZWH5u62k7PxN4T2y");
+declare_id!("7Hrcju6Xgz6DPoyZSZLgeVjqbmxkcGSi2ZaXsL4KDN7C");
 
 #[program]
 pub mod neobank {
@@ -94,8 +94,16 @@ pub mod neobank {
     }
 
     pub fn configure_token_vault(context: Context<ConfigureTokenVault>) -> Result<()> {
-        context.accounts.bank_account.token_mint = context.accounts.token_mint.key();
-        context.accounts.bank_account.token_vault_initialized = true;
+        if context.accounts.bank_account.token_vault_initialized {
+            require!(
+                context.accounts.bank_account.token_mint == context.accounts.token_mint.key(),
+                ErrorCode::TokenMintImmutable
+            );
+        } else {
+            context.accounts.bank_account.token_mint = context.accounts.token_mint.key();
+            context.accounts.bank_account.token_vault_initialized = true;
+        }
+
         Ok(())
     }
 
@@ -170,6 +178,10 @@ pub mod neobank {
             .checked_sub(amount)
             .ok_or(ErrorCode::MathOverflow)?;
 
+        Ok(())
+    }
+
+    pub fn close_bank_account(_context: Context<CloseBankAccount>) -> Result<()> {
         Ok(())
     }
 }
@@ -322,6 +334,23 @@ pub struct WithdrawSpl<'info> {
     pub token_program: Interface<'info, TokenInterface>,
 }
 
+#[derive(Accounts)]
+pub struct CloseBankAccount<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    #[account(
+        mut,
+        has_one = owner,
+        seeds = [b"bank", owner.key().as_ref()],
+        bump = bank_account.bump,
+        close = owner,
+        constraint = bank_account.sol_balance == 0 @ ErrorCode::NonZeroSolBalance,
+        constraint = bank_account.token_balance == 0 @ ErrorCode::NonZeroTokenBalance,
+    )]
+    pub bank_account: Account<'info, BankAccount>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct BankAccount {
@@ -349,6 +378,15 @@ pub enum ErrorCode {
 
     #[msg("Token mint does not match configured mint")]
     TokenMintMismatch,
+
+    #[msg("Token mint cannot be changed after initial configuration")]
+    TokenMintImmutable,
+
+    #[msg("Cannot close account while SOL balance is non-zero")]
+    NonZeroSolBalance,
+
+    #[msg("Cannot close account while SPL balance is non-zero")]
+    NonZeroTokenBalance,
 
     #[msg("Math overflow")]
     MathOverflow,
